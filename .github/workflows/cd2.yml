@@ -7,7 +7,7 @@ on:
         description: 'The Amazon ECR registry URL'
         required: true
         type: string
-        default: "607700977843.dkr.ecr.us-east-2.amazonaws.com/rohana-strapi-repo"
+        default: "607700977843.dkr.ecr.us-east-2.amazonaws.com"
       ecr-repository:
         description: 'The Amazon ECR repository name'
         required: true
