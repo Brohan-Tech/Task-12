@@ -1,0 +1,50 @@
+name: CI - Strapi Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: us-east-2
+  IMAGE_NAME: rohana-strapi-repo
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Image to ECR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Extract Short SHA
+        id: sha
+        run: echo "SHORT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
+
+      - name: Build Docker Image
+        run: |
+          docker build -t $ECR_REGISTRY/$IMAGE_NAME:latest ./my-strapi-project
+          docker tag $ECR_REGISTRY/$IMAGE_NAME:latest $ECR_REGISTRY/$IMAGE_NAME:$SHORT_SHA
+
+      - name: Push Docker Images (latest + SHA)
+        run: |
+          docker push $ECR_REGISTRY/$IMAGE_NAME:latest
+          docker push $ECR_REGISTRY/$IMAGE_NAME:$SHORT_SHA
+
+      - name: Output Image URIs
+        run: |
+          echo "Pushed Image: $ECR_REGISTRY/$IMAGE_NAME:latest"
+          echo "Pushed Image: $ECR_REGISTRY/$IMAGE_NAME:$SHORT_SHA"
+
