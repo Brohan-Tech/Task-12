@@ -1,0 +1,60 @@
+# Node modules
+node_modules/
+
+# Build artifacts
+dist/
+.tmp/
+.cache/
+build/
+
+# Strapi generated
+.strapi/
+.strapi-updater.json
+
+# Local environment files
+.env
+.env.*
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# VSCode/IDE
+.vscode/
+.idea/
+*.sw?
+
+# Public uploads (optional: keep if using local provider)
+public/uploads/
+
+# TypeScript
+*.tsbuildinfo
+
+# Docker
+docker-compose.override.yml
+docker-volume/
+
+# Database files (if local SQLite is used)
+database/*.sqlite
+
+# Optional: ignore custom config overrides
+config/environments/**/database.json
+config/environments/**/server.json
+
+# GitHub Actions runtime files
+.github/workflows/*.log
+
+# Ignore local test coverage (if used)
+coverage/
+
+# Ignore test output
+test-output/
+
+# Misc
+npm-shrinkwrap.json
+
