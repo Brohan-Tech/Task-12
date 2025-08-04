@@ -1,0 +1,8 @@
+container_image     = "607700977843.dkr.ecr.us-east-2.amazonaws.com/rohana-strapi-repo:latest"
+app_keys            = "2431c7d949cab49735465bc9755b1c87"
+admin_jwt_secret    = "5aa0ee9715a49f4a19e2b4c712350cc4"
+jwt_secret          = "9d002975e41fbff34061c2e827c63465"
+api_token_salt      = "60a9160e826337729707eca7df357dd0"
+execution_role_arn = "arn:aws:iam::607700977843:role/rohana-ecs-execution-role"
+task_role_arn      = "arn:aws:iam::607700977843:role/rohana-ecs-execution-role"
+codedeploy_role_arn = "arn:aws:iam::607700977843:role/rohana-codedeploy-role"

@@ -19,6 +19,7 @@ env:
   AWS_REGION: us-east-2
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
   IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+  TF_VAR_image_uri: 607700977843.dkr.ecr.us-east-2.amazonaws.com/strapi:${{ github.event.inputs.image_tag }}
   SERVICE_NAME: rohana-strapi-service
   CLUSTER_NAME: rohana-strapi-cluster
   TASK_DEF_NAME: rohana-strapi-task
@@ -50,7 +51,7 @@ jobs:
 
       - name: Terraform Apply
         if: github.event.inputs.action == 'apply'
-        run: terraform apply -auto-approve -input=false -var="image_tag=${{ env.IMAGE_TAG }}"
+        run: terraform apply -auto-approve -input=false
 
       - name: Register CodeDeploy Deployment
         if: github.event.inputs.action == 'apply'
@@ -60,13 +61,23 @@ jobs:
             --deployment-group-name $DEPLOYMENT_GROUP \
             --deployment-config-name CodeDeployDefault.ECSCanary10Percent5Minutes \
             --description "GitHub Actions triggered deployment - $IMAGE_TAG" \
-            --github-location repository=${{ github.repository }},commitId=${{ github.sha }} \
             --region $AWS_REGION \
             --output text --query deploymentId)
 
+          echo "DEPLOYMENT_ID=$DEPLOYMENT_ID" >> $GITHUB_ENV
           echo "Triggered deployment with ID: $DEPLOYMENT_ID"
+
+      - name: Wait for CodeDeploy Deployment to Complete
+        if: github.event.inputs.action == 'apply'
+        run: |
+          echo "Waiting for deployment $DEPLOYMENT_ID to finish..."
+          set -e
+          aws deploy wait deployment-successful \
+            --deployment-id $DEPLOYMENT_ID \
+            --region $AWS_REGION
+          echo "Deployment $DEPLOYMENT_ID completed successfully."
 
       - name: Terraform Destroy
         if: github.event.inputs.action == 'destroy'
-        run: terraform destroy -auto-approve -input=false -var="image_tag=${{ env.IMAGE_TAG }}"
+        run: terraform destroy -auto-approve -input=false
 
