@@ -22,7 +22,7 @@ on:
         description: 'The path to the Dockerfile'
         required: true
         type: string
-        default: ./my-strapi-app/
+        default: ./my-strapi-project/
 
 env:
   ECS_TASK_DEFINITION: "rohana-strapi-task"
