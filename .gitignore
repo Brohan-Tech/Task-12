@@ -58,3 +58,15 @@ test-output/
 # Misc
 npm-shrinkwrap.json
 
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+crash.log
+terraform.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+terraform.tfvars.json
+
