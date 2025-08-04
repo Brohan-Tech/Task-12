@@ -1,4 +1,4 @@
-name: CD - Deploy to ECS Fargate with CodeDeploy
+name: CD - Terraform Deployment
 
 on:
   workflow_dispatch:
@@ -12,72 +12,53 @@ on:
           - apply
           - destroy
       image_tag:
-        description: 'Git SHA image tag'
-        required: true
+        description: 'Git SHA image tag (optional)'
+        required: false
 
 env:
   AWS_REGION: us-east-2
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-  IMAGE_TAG: ${{ github.event.inputs.image_tag }}
-  TF_VAR_image_uri: 607700977843.dkr.ecr.us-east-2.amazonaws.com/strapi:${{ github.event.inputs.image_tag }}
-  SERVICE_NAME: rohana-strapi-service
-  CLUSTER_NAME: rohana-strapi-cluster
-  TASK_DEF_NAME: rohana-strapi-task
-  DEPLOYMENT_GROUP: rohana-strapi-dg
-  CODEDEPLOY_APP: rohana-strapi-cd-app
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.6.6
-
-      - name: Configure AWS Credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.3
+
       - name: Terraform Init
         run: terraform init
 
       - name: Terraform Apply
-        if: github.event.inputs.action == 'apply'
-        run: terraform apply -auto-approve -input=false
-
-      - name: Register CodeDeploy Deployment
-        if: github.event.inputs.action == 'apply'
+        if: ${{ github.event.inputs.action == 'apply' }}
         run: |
-          DEPLOYMENT_ID=$(aws deploy create-deployment \
-            --application-name $CODEDEPLOY_APP \
-            --deployment-group-name $DEPLOYMENT_GROUP \
-            --deployment-config-name CodeDeployDefault.ECSCanary10Percent5Minutes \
-            --description "GitHub Actions triggered deployment - $IMAGE_TAG" \
-            --region $AWS_REGION \
-            --output text --query deploymentId)
-
-          echo "DEPLOYMENT_ID=$DEPLOYMENT_ID" >> $GITHUB_ENV
-          echo "Triggered deployment with ID: $DEPLOYMENT_ID"
-
-      - name: Wait for CodeDeploy Deployment to Complete
-        if: github.event.inputs.action == 'apply'
-        run: |
-          echo "Waiting for deployment $DEPLOYMENT_ID to finish..."
-          set -e
-          aws deploy wait deployment-successful \
-            --deployment-id $DEPLOYMENT_ID \
-            --region $AWS_REGION
-          echo "Deployment $DEPLOYMENT_ID completed successfully."
+          terraform apply -auto-approve -var="image_uri=${{ secrets.ECR_REPOSITORY }}:${{ github.event.inputs.image_tag || github.sha }}"
 
       - name: Terraform Destroy
-        if: github.event.inputs.action == 'destroy'
-        run: terraform destroy -auto-approve -input=false
+        if: ${{ github.event.inputs.action == 'destroy' }}
+        run: terraform destroy -auto-approve
+
+      - name: Trigger CodeDeploy Deployment
+        if: ${{ github.event.inputs.action == 'apply' }}
+        run: |
+          aws deploy create-deployment \
+            --application-name rohana-strapi-app \
+            --deployment-group-name rohana-strapi-dg \
+            --deployment-config-name CodeDeployDefault.ECSCanary10Percent5Minutes \
+            --description "GitHub Actions Deployment - ${{ github.sha }}" \
+            --github-location repository=${{ github.repository }},commitId=${{ github.sha }} \
+            --region $AWS_REGION
 
